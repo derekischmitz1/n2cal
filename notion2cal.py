@@ -80,6 +80,16 @@ def find_description(properties: dict) -> str:
                 return text
     return ""
 
+def get_property_text(properties, name):
+    prop = properties.get(name, {})
+    prop_type = prop.get("type")
+    if prop_type == "title":
+        return "".join(t.get("plain_text", "") for t in prop.get("title", []))
+    elif prop_type == "rich_text":
+        return "".join(t.get("plain_text", "") for t in prop.get("rich_text", []))
+    elif prop_type == "select":
+        return prop.get("select", {}).get("name", "")
+    return ""
 
 def parse_datetime(value: str) -> datetime | date:
     """Parse a Notion date string into a datetime or date object."""
@@ -109,6 +119,16 @@ def is_in_past(start, end) -> bool:
     # Pure date: include events whose date is today or later
     return reference < today
 
+def get_property_text(properties, name):
+    prop = properties.get(name, {})
+    prop_type = prop.get("type")
+    if prop_type == "title":
+        return "".join(t.get("plain_text", "") for t in prop.get("title", []))
+    elif prop_type == "rich_text":
+        return "".join(t.get("plain_text", "") for t in prop.get("rich_text", []))
+    elif prop_type == "select":
+        return prop.get("select", {}).get("name", "")
+    return ""
 
 def build_calendar(pages: list[dict]) -> Calendar:
     """Build an iCalendar object from Notion pages."""
@@ -135,8 +155,16 @@ def build_calendar(pages: list[dict]) -> Calendar:
         if not start_raw:
             skipped += 1
             continue
-
+            
+class_val = get_property_text(props, "Class")
+    assignment_val = get_property_text(props, "Assignment Name")
+    if class_val and assignment_val:
+        title = f"[{class_val}] {assignment_val}"
+    elif assignment_val:
+        title = assignment_val
+    else:
         title = get_title(props)
+        
         description = find_description(props)
         start = parse_datetime(start_raw)
         end = parse_datetime(end_raw) if end_raw else None
