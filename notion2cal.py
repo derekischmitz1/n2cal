@@ -145,8 +145,8 @@ def build_calendar(pages: list[dict]) -> Calendar:
             skipped += 1
             continue
             
-class_val = get_property_text(props, "Class")
-assignment_val = get_property_text(props, "Assignment Name")
+        class_val = get_property_text(props, "Class")
+        assignment_val = get_property_text(props, "Assignment Name")
     if class_val and assignment_val:
         title = f"[{class_val}]: {assignment_val}"
     elif assignment_val:
