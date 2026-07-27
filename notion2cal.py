@@ -42,17 +42,34 @@ def query_database(database_id: str) -> list[dict]:
 
 
 def find_date_property(properties: dict) -> tuple[str, dict] | None:
-    """Find the first date-type property in a page's properties."""
+    """
+    Find the appropriate date property based on 'Due' and 'Done' logic.
+    - If Due and Done are both complete, use Done.
+    - If Due is complete and no Done date, use Due.
+    - Fallback to the first available date property if neither is found.
+    """
+    due_prop = properties.get("Due", {}).get("date")
+    done_prop = properties.get("Done", {}).get("date")
+
+    if due_prop and done_prop:
+        return "Done", done_prop
+    elif due_prop and not done_prop:
+        return "Due", due_prop
+    elif done_prop and not due_prop:
+        return "Done", done_prop
+
+    # Fallback: return first non-empty date property if neither Due nor Done exist
     for name, prop in properties.items():
-        if prop["type"] == "date" and prop.get("date"):
+        if prop.get("type") == "date" and prop.get("date"):
             return name, prop["date"]
+            
     return None
 
 
 def get_title(properties: dict) -> str:
     """Extract the title from a page's properties."""
     for prop in properties.values():
-        if prop["type"] == "title":
+        if prop.get("type") == "title":
             parts = prop.get("title", [])
             return "".join(t.get("plain_text", "") for t in parts)
     return "Untitled"
@@ -61,7 +78,7 @@ def get_title(properties: dict) -> str:
 def get_rich_text(properties: dict, name: str) -> str:
     """Extract plain text from a rich_text property by name."""
     prop = properties.get(name)
-    if not prop or prop["type"] != "rich_text":
+    if not prop or prop.get("type") != "rich_text":
         return ""
     return "".join(t.get("plain_text", "") for t in prop.get("rich_text", []))
 
@@ -74,11 +91,12 @@ def find_description(properties: dict) -> str:
             return text
     # Fallback: return first non-empty rich_text property
     for prop in properties.values():
-        if prop["type"] == "rich_text":
+        if prop.get("type") == "rich_text":
             text = "".join(t.get("plain_text", "") for t in prop.get("rich_text", []))
             if text:
                 return text
     return ""
+
 
 def get_property_text(properties, name):
     prop = properties.get(name, {})
@@ -91,6 +109,7 @@ def get_property_text(properties, name):
         return prop.get("select", {}).get("name", "")
     return ""
 
+
 def parse_datetime(value: str) -> datetime | date:
     """Parse a Notion date string into a datetime or date object."""
     for fmt in ("%Y-%m-%dT%H:%M:%S.%f%z", "%Y-%m-%dT%H:%M:%S%z"):
@@ -100,6 +119,7 @@ def parse_datetime(value: str) -> datetime | date:
             continue
     # Date-only string: return a date object (not datetime) for all-day events
     return date.fromisoformat(value)
+
 
 def build_calendar(pages: list[dict]) -> Calendar:
     """Build an iCalendar object from Notion pages."""
@@ -158,7 +178,7 @@ def build_calendar(pages: list[dict]) -> Calendar:
             event.add("description", description)
 
         event.add("uid", f"{page['id']}@notion2cal")
-        event.add("dtstamp", datetime.now())
+        event.add("dtstamp", datetime.now(timezone.utc))
 
         page_url = page.get("url")
         if page_url:
