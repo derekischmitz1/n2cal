@@ -2,6 +2,8 @@ name: Sync Notion to Calendar
 
 on:
   workflow_dispatch: # Allow manual trigger
+  schedule:
+    - cron: '0 * * * *' # Runs every 60 minutes
 
 permissions:
   contents: write
